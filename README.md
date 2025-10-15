@@ -26,4 +26,6 @@ Die Verschlüsselung basiert auf **AES-256 GCM**, einem modernen und sehr sicher
 
 ---
 
+https://dd1911.github.io/text-encryptor/
+
 **Hinweis:** Dieses Projekt dient ausschließlich dem **Verstehen von Verschlüsselung** und **dem Experimentieren mit sicheren Texten**. Es ersetzt keine professionellen Verschlüsselungslösungen für den echten Datentransfer.
