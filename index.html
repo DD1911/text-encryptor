@@ -6,30 +6,40 @@
     <title>Text Verschlüsseln – AES & Decrypt</title>
     <style>
         body {
+            background: #f2f5f7;
+            font-family: "Segoe UI", Roboto, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 20px;
             padding: 30px;
-            background: #f2f5f7;
-            font-family: "Segoe UI", Roboto, sans-serif;
+        }
+
+        .panels-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 20px;
         }
 
         .panel {
             width: 340px;
             background: white;
-            padding: 20px;
+            padding: 25px 20px;
             border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .info-panel {
             width: 720px;
             background: #eef6ee;
-            padding: 20px;
+            padding: 25px 20px;
             border-radius: 12px;
             text-align: center;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
             color: #222;
         }
 
@@ -37,10 +47,9 @@
         label { display:block; margin-top:10px; font-weight:600; color:#333; }
         textarea { width:100%; height:80px; font-family: monospace; font-size:15px; padding:8px; border-radius:8px; border:1px solid #ccc; resize:none; }
         input[type="password"] { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; margin-top:5px; }
-        button { margin-top:10px; padding:8px 14px; border-radius:8px; border:none; background:#2e8b57; color:white; cursor:pointer; width:100%; }
-        .output { margin-top:10px; background:#eef6ee; padding:10px; border-radius:8px; font-family: monospace; min-height:40px; display:flex; align-items:center; justify-content:space-between; }
+        button { margin-top:10px; padding:10px; border-radius:8px; border:none; background:#2e8b57; color:white; cursor:pointer; width:100%; font-weight:600; }
+        .output { margin-top:10px; background:#eef6ee; padding:10px; border-radius:8px; font-family: monospace; min-height:40px; display:flex; align-items:center; justify-content:space-between; word-break:break-all; }
         .copy-btn { background:#ccc; color:#222; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; }
-        .panels-wrapper { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
     </style>
 </head>
 <body>
@@ -85,7 +94,8 @@
         Diese Webseite verschlüsselt Texte sicher mit <strong>AES-256 GCM</strong>.<br>
         AES-256 ist ein moderner Verschlüsselungsstandard mit einem 256-Bit-Schlüssel, der praktisch <strong>unknackbar</strong> ist.<br>
         Selbst mit Supercomputern würde es Milliarden Jahre dauern, den Schlüssel zu erraten.<br>
-        Gib einfach ein Passwort ein, schreibe deinen Text und verschlüssele ihn. Zum Entschlüsseln brauchst du dasselbe Passwort.
+        Gib einfach ein Passwort ein, schreibe deinen Text und verschlüssele ihn. Zum Entschlüsseln brauchst du dasselbe Passwort.<br>
+        <em>Hinweis: Diese Anwendung dient nur zu Lernzwecken und ersetzt keine professionelle Verschlüsselung.</em>
     </p>
 </div>
 
