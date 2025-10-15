@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Text Verschlüsseln – AES & Decrypt</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding: 30px;
+            background: #f2f5f7;
+            gap: 30px;
+            font-family: "Segoe UI", Roboto, sans-serif;
+        }
+
+        .panel {
+            width: 340px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        h2 { text-align:center; color:#2e8b57; margin-top:0; }
+        label { display:block; margin-top:10px; font-weight:600; color:#333; }
+        textarea { width:100%; height:80px; font-family: monospace; font-size:15px; padding:8px; border-radius:8px; border:1px solid #ccc; resize:none; }
+        input[type="password"] { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; margin-top:5px; }
+        button { margin-top:10px; padding:8px 14px; border-radius:8px; border:none; background:#2e8b57; color:white; cursor:pointer; width:100%; }
+        .output { margin-top:10px; background:#eef6ee; padding:10px; border-radius:8px; font-family: monospace; min-height:40px; display:flex; align-items:center; justify-content:space-between; }
+        .copy-btn { background:#ccc; color:#222; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; }
+    </style>
+</head>
+<body>
+
+<div class="panel" id="encryptPanel">
+    <h2>🔐 Verschlüsseln</h2>
+    <label>Passwort</label>
+    <input type="password" id="encPassword" placeholder="Gib ein Passwort ein">
+
+    <label>Klartext</label>
+    <textarea id="plainText">Hallo Welt</textarea>
+
+    <button id="encryptBtn">Verschlüsseln</button>
+
+    <div class="output">
+        <span id="encryptedOutput"></span>
+        <button class="copy-btn" id="copyEnc">📋</button>
+    </div>
+</div>
+
+<div class="panel" id="decryptPanel">
+    <h2>🔓 Entschlüsseln</h2>
+    <label>Passwort</label>
+    <input type="password" id="decPassword" placeholder="Gib das Passwort ein">
+
+    <label>Verschlüsselter Text</label>
+    <textarea id="cipherText"></textarea>
+
+    <button id="decryptBtn">Entschlüsseln</button>
+
+    <div class="output">
+        <span id="decryptedOutput"></span>
+        <button class="copy-btn" id="copyDec">📋</button>
+    </div>
+</div>
+
+<script>
+    async function encryptText(plain, password) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+        const key = await crypto.subtle.deriveKey(
+            { name:"PBKDF2", salt: enc.encode("salt1234"), iterations:100000, hash:"SHA-256" },
+            keyMaterial,
+            { name:"AES-GCM", length:256 },
+            true,
+            ["encrypt"]
+        );
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const cipher = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, enc.encode(plain));
+        return { cipher: arrayBufferToBase64(cipher), iv: arrayBufferToBase64(iv) };
+    }
+
+    async function decryptText(cipherBase64, ivBase64, password) {
+        const enc = new TextEncoder();
+        const dec = new TextDecoder();
+        const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+        const key = await crypto.subtle.deriveKey(
+            { name:"PBKDF2", salt: enc.encode("salt1234"), iterations:100000, hash:"SHA-256" },
+            keyMaterial,
+            { name:"AES-GCM", length:256 },
+            true,
+            ["decrypt"]
+        );
+        const cipher = base64ToArrayBuffer(cipherBase64);
+        const iv = base64ToArrayBuffer(ivBase64);
+        const plain = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, key, cipher);
+        return dec.decode(plain);
+    }
+
+    function arrayBufferToBase64(buffer) { return btoa(String.fromCharCode(...new Uint8Array(buffer))); }
+    function base64ToArrayBuffer(base64) { const binary = atob(base64); const bytes = new Uint8Array(binary.length); for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i); return bytes.buffer; }
+
+    const encryptBtn = document.getElementById("encryptBtn");
+    const decryptBtn = document.getElementById("decryptBtn");
+    const plainText = document.getElementById("plainText");
+    const cipherText = document.getElementById("cipherText");
+    const encPassword = document.getElementById("encPassword");
+    const decPassword = document.getElementById("decPassword");
+    const encryptedOutput = document.getElementById("encryptedOutput");
+    const decryptedOutput = document.getElementById("decryptedOutput");
+    const copyEnc = document.getElementById("copyEnc");
+    const copyDec = document.getElementById("copyDec");
+
+    encryptBtn.onclick = async () => {
+        if(!encPassword.value) return alert("Passwort eingeben!");
+        const { cipher, iv } = await encryptText(plainText.value, encPassword.value);
+        encryptedOutput.textContent = cipher + "::" + iv;
+    };
+
+    decryptBtn.onclick = async () => {
+        if(!decPassword.value) return alert("Passwort eingeben!");
+        try {
+            const [cipher, iv] = cipherText.value.split("::");
+            const plain = await decryptText(cipher, iv, decPassword.value);
+            decryptedOutput.textContent = plain;
+        } catch(e) {
+            alert("Fehler: falsches Passwort oder ungültiger Text!");
+        }
+    };
+
+    function copyText(span) {
+        const range = document.createRange();
+        range.selectNode(span);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand("copy");
+        window.getSelection().removeAllRanges();
+    }
+
+    copyEnc.onclick = () => copyText(encryptedOutput);
+    copyDec.onclick = () => copyText(decryptedOutput);
+</script>
+</body>
+</html>
