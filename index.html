@@ -3,16 +3,22 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Text Verschlüsseln – AES & Decrypt</title>
+    <title>Sichere Text-Verschlüsselung – AES & Decrypt</title>
+    
     <style>
+        /* DESIGN-REFERENZ:
+           Das Layout orientiert sich am "Material Design" Prinzip (Karten-Layout, Schatten),
+           um eine moderne und intuitive Benutzerführung zu gewährleisten.
+        */
         body {
             background: #f2f5f7;
-            font-family: "Segoe UI", Roboto, sans-serif;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 20px;
             padding: 30px;
+            min-height: 100vh;
         }
 
         .panels-wrapper {
@@ -20,10 +26,14 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 20px;
+            width: 100%;
+            max-width: 1000px;
         }
 
         .panel {
-            width: 340px;
+            flex: 1;
+            min-width: 300px;
+            max-width: 450px;
             background: white;
             padding: 25px 20px;
             border-radius: 12px;
@@ -34,22 +44,77 @@
         }
 
         .info-panel {
-            width: 720px;
+            width: 100%;
+            max-width: 920px;
             background: #eef6ee;
             padding: 25px 20px;
             border-radius: 12px;
             text-align: center;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
             color: #222;
         }
 
         h2 { text-align:center; color:#2e8b57; margin-top:0; }
         label { display:block; margin-top:10px; font-weight:600; color:#333; }
-        textarea { width:100%; height:80px; font-family: monospace; font-size:15px; padding:8px; border-radius:8px; border:1px solid #ccc; resize:none; }
-        input[type="password"] { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; margin-top:5px; }
-        button { margin-top:10px; padding:10px; border-radius:8px; border:none; background:#2e8b57; color:white; cursor:pointer; width:100%; font-weight:600; }
-        .output { margin-top:10px; background:#eef6ee; padding:10px; border-radius:8px; font-family: monospace; min-height:40px; display:flex; align-items:center; justify-content:space-between; word-break:break-all; }
-        .copy-btn { background:#ccc; color:#222; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; }
+        
+        textarea { 
+            width:100%; 
+            height:80px; 
+            font-family: 'Courier New', monospace; 
+            font-size:14px; 
+            padding:10px; 
+            border-radius:8px; 
+            border:1px solid #ccc; 
+            resize:vertical; 
+            box-sizing: border-box;
+        }
+
+        input[type="password"] { 
+            width:100%; 
+            padding:10px; 
+            border-radius:6px; 
+            border:1px solid #ccc; 
+            margin-top:5px; 
+            box-sizing: border-box;
+        }
+        
+        button { 
+            margin-top:15px; 
+            padding:12px; 
+            border-radius:8px; 
+            border:none; 
+            background:#2e8b57;
+            color:white; 
+            cursor:pointer; 
+            width:100%; 
+            font-weight:600; 
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #257a4a; }
+
+        .output { 
+            margin-top:15px; 
+            background:#e8f0fe;
+            padding:10px; 
+            border-radius:8px; 
+            font-family: monospace; 
+            font-size: 0.9em;
+            min-height:40px; 
+            display:flex; 
+            align-items:center; 
+            justify-content:space-between; 
+            word-break:break-all;
+        }
+        
+        .copy-btn { 
+            width: auto; 
+            margin-top: 0; 
+            background:#ddd; 
+            color:#333; 
+            padding: 5px 10px;
+        }
+        .copy-btn:hover { background: #ccc; }
     </style>
 </head>
 <body>
@@ -57,124 +122,230 @@
 <div class="panels-wrapper">
     <div class="panel" id="encryptPanel">
         <h2>🔐 Verschlüsseln</h2>
-        <label>Passwort</label>
-        <input type="password" id="encPassword" placeholder="Gib ein Passwort ein">
+        <label for="encPassword">1. Passwort wählen</label>
+        <input type="password" id="encPassword" placeholder="Sicheres Passwort eingeben">
 
-        <label>Klartext</label>
-        <textarea id="plainText">Hallo Nutzer</textarea>
+        <label for="plainText">2. Nachricht eingeben</label>
+        <textarea id="plainText" placeholder="Geheimer Text..."></textarea>
 
         <button id="encryptBtn">Verschlüsseln</button>
 
+        <label>Ergebnis (Chiffre + IV)</label>
         <div class="output">
-            <span id="encryptedOutput"></span>
-            <button class="copy-btn" id="copyEnc">📋</button>
+            <span id="encryptedOutput">...</span>
+            <button class="copy-btn" id="copyEnc" title="Kopieren">📋</button>
         </div>
     </div>
 
     <div class="panel" id="decryptPanel">
         <h2>🔓 Entschlüsseln</h2>
-        <label>Passwort</label>
-        <input type="password" id="decPassword" placeholder="Gib das Passwort ein">
+        <label for="decPassword">1. Passwort eingeben</label>
+        <input type="password" id="decPassword" placeholder="Das gleiche Passwort wie links">
 
-        <label>Verschlüsselter Text</label>
-        <textarea id="cipherText"></textarea>
+        <label for="cipherText">2. Verschlüsselten Code einfügen</label>
+        <textarea id="cipherText" placeholder="String hier einfügen (Format: Chiffre::IV)"></textarea>
 
         <button id="decryptBtn">Entschlüsseln</button>
 
+        <label>Entschlüsselter Klartext</label>
         <div class="output">
-            <span id="decryptedOutput"></span>
-            <button class="copy-btn" id="copyDec">📋</button>
+            <span id="decryptedOutput">...</span>
+            <button class="copy-btn" id="copyDec" title="Kopieren">📋</button>
         </div>
     </div>
 </div>
 
 <div class="info-panel">
-    <h2>ℹ️ Information</h2>
+    <h2>ℹ️ Funktionsweise</h2>
     <p>
-        Diese Webseite verschlüsselt Texte sicher mit <strong>AES-256 GCM</strong>.<br>
-        AES-256 ist ein moderner Verschlüsselungsstandard mit einem 256-Bit-Schlüssel, der praktisch <strong>unknackbar</strong> ist.<br>
-        Selbst mit Supercomputern würde es Milliarden Jahre dauern, den Schlüssel zu erraten.<br>
-        Gib einfach ein Passwort ein, schreibe deinen Text und verschlüssele ihn. Zum Entschlüsseln brauchst du dasselbe Passwort.<br>
-        <em>Hinweis: Diese Anwendung dient nur zu Lernzwecken und ersetzt keine professionelle Verschlüsselung.</em>
+        <strong>Verschlüsselung:</strong> AES-GCM (256 Bit)<br>
+        <strong>Schlüsselableitung:</strong> PBKDF2 (SHA-256)<br>
+        <em>Implementierung gemäß Web Crypto API Standards (W3C).</em>
     </p>
 </div>
 
 <script>
-async function encryptText(plain, password) {
-    const enc = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    const key = await crypto.subtle.deriveKey(
-        { name:"PBKDF2", salt: enc.encode("salt1234"), iterations:100000, hash:"SHA-256" },
-        keyMaterial,
-        { name:"AES-GCM", length:256 },
-        true,
-        ["encrypt"]
-    );
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const cipher = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, enc.encode(plain));
-    return { cipher: arrayBufferToBase64(cipher), iv: arrayBufferToBase64(iv) };
-}
+    // Konstante für den Salt (in Produktion sollte dieser zufällig sein)
+    const FIXED_SALT = "projekt_salt_v1"; 
 
-async function decryptText(cipherBase64, ivBase64, password) {
-    const enc = new TextEncoder();
-    const dec = new TextDecoder();
-    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    const key = await crypto.subtle.deriveKey(
-        { name:"PBKDF2", salt: enc.encode("salt1234"), iterations:100000, hash:"SHA-256" },
-        keyMaterial,
-        { name:"AES-GCM", length:256 },
-        true,
-        ["decrypt"]
-    );
-    const cipher = base64ToArrayBuffer(cipherBase64);
-    const iv = base64ToArrayBuffer(ivBase64);
-    const plain = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, key, cipher);
-    return dec.decode(plain);
-}
-
-function arrayBufferToBase64(buffer) { return btoa(String.fromCharCode(...new Uint8Array(buffer))); }
-function base64ToArrayBuffer(base64) { const binary = atob(base64); const bytes = new Uint8Array(binary.length); for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i); return bytes.buffer; }
-
-const encryptBtn = document.getElementById("encryptBtn");
-const decryptBtn = document.getElementById("decryptBtn");
-const plainText = document.getElementById("plainText");
-const cipherText = document.getElementById("cipherText");
-const encPassword = document.getElementById("encPassword");
-const decPassword = document.getElementById("decPassword");
-const encryptedOutput = document.getElementById("encryptedOutput");
-const decryptedOutput = document.getElementById("decryptedOutput");
-const copyEnc = document.getElementById("copyEnc");
-const copyDec = document.getElementById("copyDec");
-
-encryptBtn.onclick = async () => {
-    if(!encPassword.value) return alert("Passwort eingeben!");
-    const { cipher, iv } = await encryptText(plainText.value, encPassword.value);
-    encryptedOutput.textContent = cipher + "::" + iv;
-};
-
-decryptBtn.onclick = async () => {
-    if(!decPassword.value) return alert("Passwort eingeben!");
-    try {
-        const [cipher, iv] = cipherText.value.split("::");
-        const plain = await decryptText(cipher, iv, decPassword.value);
-        decryptedOutput.textContent = plain;
-    } catch(e) {
-        alert("Fehler: falsches Passwort oder ungültiger Text!");
+    /* --- HILFSFUNKTIONEN FÜR BASE64 KONVERTIERUNG ---
+       Quellen: StackOverflow & MDN Guides zu ArrayBuffer Manipulation
+       Notwendig, da Crypto-Operationen mit binären Daten arbeiten, HTML aber Text braucht.
+    */
+    function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
     }
-};
 
-function copyText(span) {
-    const range = document.createRange();
-    range.selectNode(span);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    document.execCommand("copy");
-    window.getSelection().removeAllRanges();
-}
+    function base64ToArrayBuffer(base64) {
+        const binary_string = window.atob(base64);
+        const len = binary_string.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binary_string.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
 
-copyEnc.onclick = () => copyText(encryptedOutput);
-copyDec.onclick = () => copyText(decryptedOutput);
+    /**
+     * FUNKTION: deriveKeyFromPassword
+     * ZIEL: Ableitung eines symmetrischen Schlüssels aus einem Passwort.
+     * QUELLEN: https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey
+     * METHODE: PBKDF2 (Password-Based Key Derivation Function 2)
+     */
+    async function deriveKeyFromPassword(password, salt, usage) {
+        const enc = new TextEncoder();
+        
+        // Schritt 1: Import des Passworts als KeyMaterial
+        const keyMaterial = await crypto.subtle.importKey(
+            "raw", 
+            enc.encode(password), 
+            "PBKDF2", 
+            false, 
+            ["deriveKey"]
+        );
+
+        // Schritt 2: Ableitung des AES-Schlüssels
+        // Nutzung von SHA-256 als Hash-Algorithmus (Standardempfehlung NIST)
+        return await crypto.subtle.deriveKey(
+            {
+                name: "PBKDF2",
+                salt: enc.encode(salt),
+                iterations: 100000, // Hohe Iterationszahl gegen Brute-Force
+                hash: "SHA-256"
+            },
+            keyMaterial,
+            { name: "AES-GCM", length: 256 }, // AES-256 für hohe Sicherheit
+            true,
+            [usage]
+        );
+    }
+
+    /**
+     * FUNKTION: encryptText
+     * ZIEL: Verschlüsselung mittels AES-GCM.
+     * QUELLEN: https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/encrypt
+     */
+    async function encryptText(plainText, password) {
+        const enc = new TextEncoder();
+        
+        // Generierung des Schlüssels (siehe deriveKeyFromPassword)
+        const key = await deriveKeyFromPassword(password, FIXED_SALT, "encrypt");
+        
+        // WICHTIG: Der Initialisierungsvektor (IV) muss kryptografisch zufällig sein.
+        // Ein fester IV würde die Verschlüsselung unsicher machen (Wiederholungsangriffe).
+        const iv = crypto.getRandomValues(new Uint8Array(12)); // 12 Bytes empfohlen für GCM
+
+        const cipherBuffer = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: iv },
+            key,
+            enc.encode(plainText)
+        );
+
+        // Rückgabe als Objekt, da IV für die Entschlüsselung benötigt wird
+        return {
+            cipher: arrayBufferToBase64(cipherBuffer),
+            iv: arrayBufferToBase64(iv)
+        };
+    }
+
+    /**
+     * FUNKTION: decryptText
+     * ZIEL: Entschlüsselung und Integritätsprüfung.
+     */
+    async function decryptText(cipherBase64, ivBase64, password) {
+        const dec = new TextDecoder();
+
+        const key = await deriveKeyFromPassword(password, FIXED_SALT, "decrypt");
+
+        const cipherBuffer = base64ToArrayBuffer(cipherBase64);
+        const ivBuffer = base64ToArrayBuffer(ivBase64);
+
+        // Der decrypt-Aufruf wirft einen Fehler, wenn der Tag (Auth-Tag) nicht passt.
+        // Das bedeutet: Falsches Passwort oder manipulierte Daten.
+        const plainBuffer = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv: ivBuffer },
+            key,
+            cipherBuffer
+        );
+
+        return dec.decode(plainBuffer);
+    }
+
+    // ============================================================
+    // EVENT HANDLER & UI LOGIK
+    // Struktur inspiriert durch Best-Practices für asynchrone Events
+    // ============================================================
+
+    const encryptBtn = document.getElementById("encryptBtn");
+    const decryptBtn = document.getElementById("decryptBtn");
+    
+    encryptBtn.onclick = async () => {
+        const pwd = document.getElementById("encPassword").value;
+        const text = document.getElementById("plainText").value;
+
+        if(!pwd || !text) {
+            alert("Bitte Passwort und Text eingeben.");
+            return;
+        }
+
+        try {
+            const result = await encryptText(text, pwd);
+            // Formatierung: Chiffre::IV (eigene Konvention zur einfachen Übertragung)
+            const outputString = `${result.cipher}::${result.iv}`;
+            document.getElementById("encryptedOutput").textContent = outputString;
+        } catch (err) {
+            console.error("Fehler im Verschlüsselungsprozess:", err);
+            alert("Fehler bei der Verschlüsselung.");
+        }
+    };
+
+    decryptBtn.onclick = async () => {
+        const pwd = document.getElementById("decPassword").value;
+        const fullCipherString = document.getElementById("cipherText").value;
+
+        if(!pwd || !fullCipherString) {
+            alert("Bitte alle Felder ausfüllen.");
+            return;
+        }
+
+        if(!fullCipherString.includes("::")) {
+            alert("Ungültiges Format! Erwartet wird 'Cipher::IV'.");
+            return;
+        }
+
+        try {
+            const parts = fullCipherString.split("::");
+            const cipherPart = parts[0];
+            const ivPart = parts[1];
+
+            const plainText = await decryptText(cipherPart, ivPart, pwd);
+            document.getElementById("decryptedOutput").textContent = plainText;
+        } catch (err) {
+            console.error("Entschlüsselung fehlgeschlagen:", err);
+            alert("Fehler! Passwort falsch oder Daten manipuliert.");
+            document.getElementById("decryptedOutput").textContent = "FEHLER";
+        }
+    };
+
+    // UX-Optimierung: Kopieren per Klick
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).textContent;
+        if(text && text !== "..." && text !== "FEHLER") {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("In Zwischenablage kopiert!");
+            });
+        }
+    }
+
+    document.getElementById("copyEnc").onclick = () => copyToClipboard("encryptedOutput");
+    document.getElementById("copyDec").onclick = () => copyToClipboard("decryptedOutput");
+
 </script>
 </body>
 </html>
-
