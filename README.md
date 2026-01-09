@@ -15,13 +15,7 @@ Die Verschlüsselung basiert auf **AES-256 GCM**, einem modernen und sehr sicher
 1. Gebe ein Passwort in das **Verschlüsseln-Panel** ein.
 2. Schreibe den Text, den du verschlüsseln möchtest.
 3. Klicke auf **Verschlüsseln** – der verschlüsselte Text erscheint im unteren Feld.
-4. Zum Entschlüsseln kopiere den verschlüsselten Text in das **Entschlüsseln-Panel**, gib das gleiche Passwort ein und klicke auf **Entschlüsseln**.
-
-## Sicherheitshinweis
-
-- AES-256 gilt als praktisch **unknackbar** mit heutigen Computern.
-- Verwende **starke und einzigartige Passwörter**, um maximale Sicherheit zu gewährleisten.
-- Diese Anwendung ist **für Lernzwecke** gedacht und nicht für die Übertragung hochsensibler Daten im produktiven Umfeld geeignet.
+4. Zum Entschlüsseln kopiere den verschlüsselten Text in das **Entschlüsseln-Panel**, gib das gleiche Passwort ein und klicke auf **Entschlüsseln**
 
 ---
 
