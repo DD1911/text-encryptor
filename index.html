@@ -6,10 +6,7 @@
     <title>Sichere Text-Verschlüsselung – AES & Decrypt</title>
     
     <style>
-        /* DESIGN-REFERENZ:
-           Das Layout orientiert sich am "Material Design" Prinzip (Karten-Layout, Schatten),
-           um eine moderne und intuitive Benutzerführung zu gewährleisten.
-        */
+        /* Grund-Layout + Farben für ein modernes UI */
         body {
             background: #f2f5f7;
             font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -21,6 +18,7 @@
             min-height: 100vh;
         }
 
+        /* Wrapper damit beide Panels nebeneinander erscheinen */
         .panels-wrapper {
             display: flex;
             flex-wrap: wrap;
@@ -30,6 +28,7 @@
             max-width: 1000px;
         }
 
+        /* Panel Card Style für Verschlüsseln / Entschlüsseln */
         .panel {
             flex: 1;
             min-width: 300px;
@@ -43,6 +42,7 @@
             gap: 10px;
         }
 
+        /* Info-Panel unterhalb (AES-GCM Details) */
         .info-panel {
             width: 100%;
             max-width: 920px;
@@ -57,6 +57,7 @@
         h2 { text-align:center; color:#2e8b57; margin-top:0; }
         label { display:block; margin-top:10px; font-weight:600; color:#333; }
         
+        /* Eingabefelder für Text */
         textarea { 
             width:100%; 
             height:80px; 
@@ -69,6 +70,7 @@
             box-sizing: border-box;
         }
 
+        /* Passwort-Feld Styling */
         input[type="password"] { 
             width:100%; 
             padding:10px; 
@@ -78,6 +80,7 @@
             box-sizing: border-box;
         }
         
+        /* Buttons fürs UI */
         button { 
             margin-top:15px; 
             padding:12px; 
@@ -93,6 +96,7 @@
         }
         button:hover { background: #257a4a; }
 
+        /* Ausgabe-Feld (Verschlüsseltes Ergebnis / Plaintext) */
         .output { 
             margin-top:15px; 
             background:#e8f0fe;
@@ -107,6 +111,7 @@
             word-break:break-all;
         }
         
+        /* Kleiner Button zum Kopieren */
         .copy-btn { 
             width: auto; 
             margin-top: 0; 
@@ -120,33 +125,45 @@
 <body>
 
 <div class="panels-wrapper">
+
+    <!-- Panel links zum Verschlüsseln -->
     <div class="panel" id="encryptPanel">
         <h2>🔐 Verschlüsseln</h2>
+
+        <!-- Passwort wird zur Schlüssel-Ableitung genutzt -->
         <label for="encPassword">1. Passwort wählen</label>
         <input type="password" id="encPassword" placeholder="Sicheres Passwort eingeben">
 
+        <!-- Text der später per AES-GCM verschlüsselt wird -->
         <label for="plainText">2. Nachricht eingeben</label>
         <textarea id="plainText" placeholder="Geheimer Text..."></textarea>
 
         <button id="encryptBtn">Verschlüsseln</button>
 
+        <!-- AES-GCM liefert Chiffre + IV (Initialisierungsvektor) -->
         <label>Ergebnis (Chiffre + IV)</label>
         <div class="output">
             <span id="encryptedOutput">...</span>
+            <!-- Button zum schnellen Kopieren -->
             <button class="copy-btn" id="copyEnc" title="Kopieren">📋</button>
         </div>
     </div>
 
+    <!-- Panel rechts zum Entschlüsseln -->
     <div class="panel" id="decryptPanel">
         <h2>🔓 Entschlüsseln</h2>
+
+        <!-- Gleiches Passwort notwendig, sonst Validierungsschritt scheitert -->
         <label for="decPassword">1. Passwort eingeben</label>
         <input type="password" id="decPassword" placeholder="Das gleiche Passwort wie links">
 
+        <!-- Erwartet wird der String "Cipher::IV" -->
         <label for="cipherText">2. Verschlüsselten Code einfügen</label>
         <textarea id="cipherText" placeholder="String hier einfügen (Format: Chiffre::IV)"></textarea>
 
         <button id="decryptBtn">Entschlüsseln</button>
 
+        <!-- Ausgabe wird im Erfolgsfall Klartext -->
         <label>Entschlüsselter Klartext</label>
         <div class="output">
             <span id="decryptedOutput">...</span>
@@ -155,6 +172,7 @@
     </div>
 </div>
 
+<!-- Info Panel zu verwendeten Algorithmen -->
 <div class="info-panel">
     <h2>ℹ️ Funktionsweise</h2>
     <p>
@@ -165,43 +183,36 @@
 </div>
 
 <script>
-    // Konstante für den Salt (in Produktion sollte dieser zufällig sein)
+    // Salt für PBKDF2 (hier fix, für echte Produktion randomisiert + gespeichert)
     const FIXED_SALT = "projekt_salt_v1"; 
 
-    /* --- HILFSFUNKTIONEN FÜR BASE64 KONVERTIERUNG ---
-       Quellen: StackOverflow & MDN Guides zu ArrayBuffer Manipulation
-       Notwendig, da Crypto-Operationen mit binären Daten arbeiten, HTML aber Text braucht.
-    */
+    // ArrayBuffer -> Base64, nötig für Textdarstellung
     function arrayBufferToBase64(buffer) {
         let binary = '';
         const bytes = new Uint8Array(buffer);
         const len = bytes.byteLength;
         for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
+            binary += String.fromCharCode(bytes[i]); // Byte für Byte in String wandeln
         }
-        return window.btoa(binary);
+        return window.btoa(binary); // Base64 repräsentiert dann die binären Daten
     }
 
+    // Base64 -> ArrayBuffer, um decrypt/crypto wieder nutzen zu können
     function base64ToArrayBuffer(base64) {
         const binary_string = window.atob(base64);
         const len = binary_string.length;
         const bytes = new Uint8Array(len);
         for (let i = 0; i < len; i++) {
-            bytes[i] = binary_string.charCodeAt(i);
+            bytes[i] = binary_string.charCodeAt(i); // zurück in Bytes
         }
         return bytes.buffer;
     }
 
-    /**
-     * FUNKTION: deriveKeyFromPassword
-     * ZIEL: Ableitung eines symmetrischen Schlüssels aus einem Passwort.
-     * QUELLEN: https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey
-     * METHODE: PBKDF2 (Password-Based Key Derivation Function 2)
-     */
+    // Schlüssel aus Passwort ableiten (PBKDF2 + SHA-256 → AES-256)
     async function deriveKeyFromPassword(password, salt, usage) {
         const enc = new TextEncoder();
         
-        // Schritt 1: Import des Passworts als KeyMaterial
+        // Passwort importieren als Crypto KeyMaterial
         const keyMaterial = await crypto.subtle.importKey(
             "raw", 
             enc.encode(password), 
@@ -210,64 +221,56 @@
             ["deriveKey"]
         );
 
-        // Schritt 2: Ableitung des AES-Schlüssels
-        // Nutzung von SHA-256 als Hash-Algorithmus (Standardempfehlung NIST)
+        // Ableiten des AES-Schlüssels (Iteration schützt gegen Brute-Force)
         return await crypto.subtle.deriveKey(
             {
                 name: "PBKDF2",
                 salt: enc.encode(salt),
-                iterations: 100000, // Hohe Iterationszahl gegen Brute-Force
+                iterations: 100000, // relativ hoch für besseren Schutz
                 hash: "SHA-256"
             },
             keyMaterial,
-            { name: "AES-GCM", length: 256 }, // AES-256 für hohe Sicherheit
+            { name: "AES-GCM", length: 256 },
             true,
             [usage]
         );
     }
 
-    /**
-     * FUNKTION: encryptText
-     * ZIEL: Verschlüsselung mittels AES-GCM.
-     * QUELLEN: https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/encrypt
-     */
+    // AES-GCM Verschlüsselung von Text
     async function encryptText(plainText, password) {
         const enc = new TextEncoder();
         
-        // Generierung des Schlüssels (siehe deriveKeyFromPassword)
+        // Key aus Passwort erstellen
         const key = await deriveKeyFromPassword(password, FIXED_SALT, "encrypt");
         
-        // WICHTIG: Der Initialisierungsvektor (IV) muss kryptografisch zufällig sein.
-        // Ein fester IV würde die Verschlüsselung unsicher machen (Wiederholungsangriffe).
-        const iv = crypto.getRandomValues(new Uint8Array(12)); // 12 Bytes empfohlen für GCM
+        // IV: wichtig für GCM, muss zufällig sein
+        const iv = crypto.getRandomValues(new Uint8Array(12));
 
+        // Verschlüsseln, liefert Chiffre + Auth-Tag
         const cipherBuffer = await crypto.subtle.encrypt(
             { name: "AES-GCM", iv: iv },
             key,
             enc.encode(plainText)
         );
 
-        // Rückgabe als Objekt, da IV für die Entschlüsselung benötigt wird
+        // Rückgabe im Base64 Format
         return {
             cipher: arrayBufferToBase64(cipherBuffer),
             iv: arrayBufferToBase64(iv)
         };
     }
 
-    /**
-     * FUNKTION: decryptText
-     * ZIEL: Entschlüsselung und Integritätsprüfung.
-     */
+    // AES-GCM Entschlüsselung (Validierung durch Auth-Tag)
     async function decryptText(cipherBase64, ivBase64, password) {
         const dec = new TextDecoder();
 
+        // Key wieder aus Passwort ableiten
         const key = await deriveKeyFromPassword(password, FIXED_SALT, "decrypt");
 
         const cipherBuffer = base64ToArrayBuffer(cipherBase64);
         const ivBuffer = base64ToArrayBuffer(ivBase64);
 
-        // Der decrypt-Aufruf wirft einen Fehler, wenn der Tag (Auth-Tag) nicht passt.
-        // Das bedeutet: Falsches Passwort oder manipulierte Daten.
+        // Wenn Tag ungültig → Passwort falsch oder Daten manipuliert
         const plainBuffer = await crypto.subtle.decrypt(
             { name: "AES-GCM", iv: ivBuffer },
             key,
@@ -277,11 +280,7 @@
         return dec.decode(plainBuffer);
     }
 
-    // ============================================================
-    // EVENT HANDLER & UI LOGIK
-    // Struktur inspiriert durch Best-Practices für asynchrone Events
-    // ============================================================
-
+    // Event Listener: Verschlüsseln Button
     const encryptBtn = document.getElementById("encryptBtn");
     const decryptBtn = document.getElementById("decryptBtn");
     
@@ -289,6 +288,7 @@
         const pwd = document.getElementById("encPassword").value;
         const text = document.getElementById("plainText").value;
 
+        // einfache Validierung im UI
         if(!pwd || !text) {
             alert("Bitte Passwort und Text eingeben.");
             return;
@@ -296,7 +296,7 @@
 
         try {
             const result = await encryptText(text, pwd);
-            // Formatierung: Chiffre::IV (eigene Konvention zur einfachen Übertragung)
+            // Eigenes Format: Cipher::IV, zum leichteren Kopieren/Teilen
             const outputString = `${result.cipher}::${result.iv}`;
             document.getElementById("encryptedOutput").textContent = outputString;
         } catch (err) {
@@ -305,6 +305,7 @@
         }
     };
 
+    // Event Listener: Entschlüsseln Button
     decryptBtn.onclick = async () => {
         const pwd = document.getElementById("decPassword").value;
         const fullCipherString = document.getElementById("cipherText").value;
@@ -314,6 +315,7 @@
             return;
         }
 
+        // Prüfen ob "::" vorhanden ist
         if(!fullCipherString.includes("::")) {
             alert("Ungültiges Format! Erwartet wird 'Cipher::IV'.");
             return;
@@ -333,7 +335,7 @@
         }
     };
 
-    // UX-Optimierung: Kopieren per Klick
+    // Copy-Funktion fürs UI (Clipboard API)
     function copyToClipboard(elementId) {
         const text = document.getElementById(elementId).textContent;
         if(text && text !== "..." && text !== "FEHLER") {
@@ -343,6 +345,7 @@
         }
     }
 
+    // Copy Buttons verbinden
     document.getElementById("copyEnc").onclick = () => copyToClipboard("encryptedOutput");
     document.getElementById("copyDec").onclick = () => copyToClipboard("decryptedOutput");
 
